@@ -31,7 +31,7 @@ def fetch(
     year: int = 1950,
     field: str = "article",
     max_records: int = 20000,
-    sleep: float = 2.0,
+    sleep: float = 5.0,
     step: int = DEFAULT_STEP,
     timeout: float = 30.0,
     session: requests.Session | None = None,
