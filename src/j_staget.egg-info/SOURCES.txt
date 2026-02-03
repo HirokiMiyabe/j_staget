@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+src/j_staget/__init__.py
+src/j_staget/_xml.py
+src/j_staget/cli.py
+src/j_staget/client.py
+src/j_staget/py.typed
+src/j_staget.egg-info/PKG-INFO
+src/j_staget.egg-info/SOURCES.txt
+src/j_staget.egg-info/dependency_links.txt
+src/j_staget.egg-info/entry_points.txt
+src/j_staget.egg-info/requires.txt
+src/j_staget.egg-info/top_level.txt
+tests/test_smoke.py

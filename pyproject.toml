@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "j_staget"
+version = "0.1.0"
+description = "Unofficial Python client for J-STAGE Search API (service=3)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "HirokiMiyabe"}]
+dependencies = [
+  "requests>=2.31",
+  "lxml>=4.9",
+  "polars>=0.20",
+]
+
+[project.scripts]
+j_staget = "j_staget.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

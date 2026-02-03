@@ -1,0 +1,50 @@
+# j-staget
+
+Python client for J-STAGE Search API (service=3).
+
+## Install
+```bash
+pip install j-staget
+```
+## usage 
+```python
+from j_staget import fetch
+
+res = fetch("因果", year=1950, field="article", max_records=5000, sleep=0.2)
+df = res.df
+print(df.shape, res.total_results)
+```
+
+## Install
+
+
+## Install
+```bash
+j-staget "因果" --year 1950 --field article --max-records 5000 --out data/out.parquet
+```
+
+## Notes
+```yaml
+
+※ Streamlit版に入れていた同意ゲートの文言は、**ライブラリとしては README に誘導**するのが一般的です（実行時に同意UIを出すのはCLIでもやれますが、まずはREADMEが無難）。:contentReference[oaicite:4]{index=4}
+
+---
+
+## GitHub Actions
+`.github/workflows/ci.yml`
+```yaml
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -U pip
+      - run: pip install -e . pytest
+      - run: pytest -q
+
+```
