@@ -8,17 +8,15 @@ import polars as pl
 import requests
 from lxml import etree
 
-API_URL = "https://api.jstage.jst.go.jp/searchapi/do"
+from ._xml import NS, authors_local, get_first, pick_ja_or_first_tag_local
 
-NS = {
-    "atom": "http://www.w3.org/2005/Atom",
-    "prism": "http://prismstandard.org/namespaces/basic/2.0/",
-    "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
-}
+API_URL = "https://api.jstage.jst.go.jp/searchapi/do"
+DEFAULT_STEP = 1000
+ALLOWED_FIELDS = {"article", "abst", "text"}
 
 
 class JStageAPIError(RuntimeError):
-    """J-STAGE API request/parse error."""
+    """Raised when J-STAGE API request fails or returns unexpected content."""
 
 
 @dataclass(frozen=True)
@@ -27,69 +25,47 @@ class FetchResult:
     total_results: int | None
 
 
-def _texts_local(entry: etree._Element, xpath_expr: str) -> list[str]:
-    vals = entry.xpath(xpath_expr)
-    out: list[str] = []
-    for v in vals:
-        if isinstance(v, str):
-            t = v.strip()
-            if t:
-                out.append(t)
-        else:
-            t = getattr(v, "text", None)
-            if t and t.strip():
-                out.append(t.strip())
-    return out
-
-
-def _first_local(entry: etree._Element, xpath_expr: str) -> str | None:
-    vals = _texts_local(entry, xpath_expr)
-    return vals[0] if vals else None
-
-
-def _get_first_ns(entry: etree._Element, xpath_query: str) -> str | None:
-    nodes = entry.xpath(xpath_query, namespaces=NS)
-    texts = [n.text for n in nodes if getattr(n, "text", None)]
-    return texts[0] if texts else None
-
-
-def _pick_ja_or_first_tag_local(entry: etree._Element, tag: str) -> str | None:
-    ja = _first_local(entry, f"./*[local-name()='{tag}']/*[local-name()='ja']/text()")
-    if ja:
-        return ja
-    any_text = _first_local(entry, f"./*[local-name()='{tag}']//text()")
-    return any_text
-
-
-def _authors_local(entry: etree._Element) -> list[str]:
-    ja = _texts_local(entry, "./*[local-name()='author']/*[local-name()='ja']/*[local-name()='name']/text()")
-    if ja:
-        return ja
-    return _texts_local(entry, "./*[local-name()='author']/*[local-name()='name']/text()")
-
-
 def fetch(
     target_word: str,
     *,
-    year: int = 0,
+    year: int = 1950,
     field: str = "article",
     max_records: int = 20000,
-    sleep: float = 0.1,
-    step: int = 1000,
+    sleep: float = 2.0,
+    step: int = DEFAULT_STEP,
     timeout: float = 30.0,
     session: requests.Session | None = None,
 ) -> FetchResult:
     """
     Fetch records from J-STAGE Search API (service=3).
 
-    Returns: FetchResult(df, total_results)
-    df: Polars DataFrame
-    total_results: openSearch totalResults (if available)
+    Parameters
+    ----------
+    target_word : str
+        Search keyword.
+    year : int
+        pubyearfrom
+    field : {"article","abst","text"}
+        Query field.
+    max_records : int
+        Hard cap to avoid runaway downloads.
+    sleep : float
+        Seconds to sleep between requests.
+    step : int
+        Records per request (API supports up to 1000 for service=3 in typical usage).
+    timeout : float
+        Request timeout in seconds.
+    session : requests.Session | None
+        Provide a session for connection pooling.
+
+    Returns
+    -------
+    FetchResult(df, total_results)
     """
     if not target_word or not target_word.strip():
         raise ValueError("target_word must be a non-empty string")
-    if field not in {"article", "abst", "text"}:
-        raise ValueError("field must be one of {'article','abst','text'}")
+    if field not in ALLOWED_FIELDS:
+        raise ValueError(f"field must be one of {sorted(ALLOWED_FIELDS)}")
     if max_records <= 0:
         raise ValueError("max_records must be > 0")
     if step <= 0:
@@ -134,17 +110,19 @@ def fetch(
             for entry in entries:
                 all_data.append(
                     {
-                        "author": _authors_local(entry),
-                        "article_title": _pick_ja_or_first_tag_local(entry, "article_title"),
-                        "material_title": _pick_ja_or_first_tag_local(entry, "material_title"),
-                        "article_link": _pick_ja_or_first_tag_local(entry, "article_link"),
-                        "pubyear": _get_first_ns(entry, "atom:pubyear"),
-                        "doi": _get_first_ns(entry, "prism:doi"),
-                        "volume": _get_first_ns(entry, "prism:volume"),
-                        "cdvols": _first_local(entry, "./*[local-name()='cdvols']/text()"),
-                        "number": _get_first_ns(entry, "prism:number"),
-                        "starting_page": _get_first_ns(entry, "prism:startingPage"),
-                        "ending_page": _get_first_ns(entry, "prism:endingPage"),
+                        "author": authors_local(entry),
+                        "article_title": pick_ja_or_first_tag_local(entry, "article_title"),
+                        "material_title": pick_ja_or_first_tag_local(entry, "material_title"),
+                        "article_link": pick_ja_or_first_tag_local(entry, "article_link"),
+                        "pubyear": get_first(entry, "atom:pubyear"),
+                        "doi": get_first(entry, "prism:doi"),
+                        "volume": get_first(entry, "prism:volume"),
+                        "cdvols": entry.xpath("./*[local-name()='cdvols']/text()")[0].strip()
+                        if entry.xpath("./*[local-name()='cdvols']/text()")
+                        else None,
+                        "number": get_first(entry, "prism:number"),
+                        "starting_page": get_first(entry, "prism:startingPage"),
+                        "ending_page": get_first(entry, "prism:endingPage"),
                     }
                 )
                 if len(all_data) >= max_records:
