@@ -146,6 +146,10 @@ def fetch(
                     pl.col("pubyear").cast(pl.Int32, strict=False),
                     pl.col("starting_page").cast(pl.Int32, strict=False),
                     pl.col("ending_page").cast(pl.Int32, strict=False),
+                    pl.when(pl.col("doi").is_not_null())
+                        .then(pl.concat_str([pl.lit("https://"), pl.col("doi")]))
+                        .otherwise(None)
+                        .alias("url_doi")
                 ]
             )
 

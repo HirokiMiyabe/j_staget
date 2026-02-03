@@ -12,7 +12,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--year", type=int, default=1950)
     p.add_argument("--field", choices=["article", "abst", "text"], default="article")
     p.add_argument("--max-records", type=int, default=20000)
-    p.add_argument("--sleep", type=float, default=2.0)
+    p.add_argument("--sleep", type=float, default=5.0)
     p.add_argument("--out", type=str, default="", help="output file path (.csv/.json/.parquet)")
     args = p.parse_args(argv)
 
@@ -30,7 +30,10 @@ def main(argv: list[str] | None = None) -> int:
         suf = out.suffix.lower()
 
         if suf == ".csv":
-            result.df.write_csv(out)
+            df = result.df.with_columns(
+                pl.col("author").list.join("; ").alias("author") )
+                df.write_csv(out)
+
         elif suf == ".json":
             out.write_text(result.df.write_json(), encoding="utf-8")
         elif suf == ".parquet":
