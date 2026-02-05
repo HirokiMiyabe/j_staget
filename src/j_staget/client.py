@@ -18,16 +18,8 @@ ALLOWED_FIELDS = {"article", "abst", "text", "keyword"}
 
 # service=3 で「検索語として成立する」代表的パラメータ（ERR_012回避用）
 SEARCH_PARAM_KEYS = {
-    "material",
-    "article",
-    "author",
-    "affil",
-    "keyword",
-    "abst",
-    "text",
-    "p_issn",
-    "o_issn",
-    "cdjournal",
+    "material","article","author","affil","keyword","abst","text",
+    "issn","cdjournal",  # ここが公式
 }
 
 
@@ -60,8 +52,7 @@ def fetch(
     material: str | None = None,
     author: str | None = None,
     affil: str | None = None,
-    p_issn: str | None = None,   # Print ISSN
-    o_issn: str | None = None,   # Online ISSN
+    issn: str | None = None,   # ISSN
     cdjournal: str | None = None,
 ) -> FetchResult:
     """
@@ -117,12 +108,8 @@ def fetch(
         base_params["author"] = author
     if affil:
         base_params["affil"] = affil
-    if p_issn:
-        base_params["p_issn"] = p_issn
-
-    if o_issn:
-        base_params["o_issn"] = o_issn
-
+    if issn:
+        base_params["issn"] = issn
     if cdjournal:
         base_params["cdjournal"] = cdjournal
 
@@ -184,7 +171,7 @@ def fetch(
                         "author": authors_local(entry),
                         "article_title": pick_ja_or_first_tag_local(entry, "article_title"),
                         "material_title": pick_ja_or_first_tag_local(entry, "material_title"),
-                        "cdjournal": get_first(entry, "prism:cdjournal"),
+                        "cdjournal": get_first(entry, "cdjournal"),
                         "p_issn": get_first(entry, "prism:issn"),
                         "o_issn": get_first(entry, "prism:eIssn"),
                         "article_link": pick_ja_or_first_tag_local(entry, "article_link"),
