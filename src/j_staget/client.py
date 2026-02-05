@@ -137,7 +137,6 @@ def fetch(
         total_results: int | None = None
 
         while True:
-            # start/count はページングごとに変わるのでここで付与
             params = dict(base_params)
             params["start"] = str(start_idx)
             params["count"] = str(int(step))
@@ -161,8 +160,16 @@ def fetch(
                 total_results = int(tr[0].text) if tr and tr[0].text else None
 
             entries = root.xpath("//atom:entry", namespaces=NS)
+
+            # ガード①：初回ページで 0 件
+            if start_idx == 1 and not entries:
+                break
+
+            # ガード②：entry が空
             if not entries:
                 break
+
+            prev_len = len(all_data)
 
             for entry in entries:
                 all_data.append(
@@ -184,6 +191,10 @@ def fetch(
                 )
                 if len(all_data) >= max_records:
                     break
+
+            # ガード③：データが増えなかった（異常系）
+            if len(all_data) == prev_len:
+                break
 
             if len(all_data) >= max_records:
                 break
