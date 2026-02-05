@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import polars as pl  # ← これを追加
+
 from .client import fetch
 
 
@@ -31,14 +33,16 @@ def main(argv: list[str] | None = None) -> int:
 
         if suf == ".csv":
             df = result.df.with_columns(
-                pl.col("author").list.join("; ").alias("author") )
-                df.write_csv(out)
+                pl.col("author").list.join("; ").alias("author")
+            )
+            df.write_csv(out)
 
         elif suf == ".json":
             out.write_text(result.df.write_json(), encoding="utf-8")
+
         elif suf == ".parquet":
             result.df.write_parquet(out)
-            
+
         else:
             raise SystemExit("out must end with .csv or .json or .parquet")
 
