@@ -221,6 +221,9 @@ def fetch(
         if not df.is_empty():
             df = df.with_columns(
                 [
+                    pl.col("p_issn").cast(pl.Utf8, strict=False),
+                    pl.col("o_issn").cast(pl.Utf8, strict=False),
+                    pl.col("cdjournal").cast(pl.Utf8, strict=False),
                     pl.col("author").cast(pl.List(pl.Utf8), strict=False),
                     pl.col("pubyear").cast(pl.Int32, strict=False),
                     pl.col("starting_page").cast(pl.Int32, strict=False),
