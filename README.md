@@ -8,9 +8,9 @@ Python client for J-STAGE Search API (service=3).
 > This package is an **unofficial client** for the J-STAGE Search API (service=3).  
 > Before using this package, **you must read and agree to** the following documents:
 >  
-> - J-STAGE 利用規約
+> - J-STAGE Terms And Policies:  
 >   https://www.jstage.jst.go.jp/static/pages/TermsAndPolicies/ForIndividuals/-char/ja"
-> - J-STAGE WebAPI 利用規約:  
+> - J-STAGE WebAPI Terms And Policies:  
 >   https://www.jstage.jst.go.jp/static/pages/WebAPI/-char/ja
 > - About J-STAGE Web API:  
 >   https://www.jstage.jst.go.jp/static/pages/JstageServices/TAB3/-char/ja
@@ -42,6 +42,25 @@ The `fetch` function accepts the following arguments:
   - `"abst"`: search the target word in **abstracts**
   - `"text"`: search the target word in the **full text of papers**
 
+- `material` (`str`, optional, default: `None`)  
+  Filters by **journal / publication title** (部分一致).  
+  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:1]{index=1}
+
+- `author` (`str`, optional, default: `None`)  
+  Filters by **author name** (部分一致).  
+  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:2]{index=2}
+
+- `affil` (`str`, optional, default: `None`)  
+  Filters by **author affiliation** (部分一致).  
+  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:3]{index=3}
+
+- `issn` (`str`, optional, default: `None`)  
+  Filters by **ISSN** (完全一致, e.g., `1234-5678`). :contentReference[oaicite:4]{index=4}
+
+- `cdjournal` (`str`, optional, default: `None`)  
+  Filters by **journal code** (`cdjournal`). Useful when you want a stable identifier instead of a name string. :contentReference[oaicite:5]{index=5}
+
+
 - `max_records` (`int`, optional, default: `20000`)  
   Maximum number of records to retrieve.  
   This is a safety limit to prevent excessive API requests.
@@ -50,8 +69,46 @@ The `fetch` function accepts the following arguments:
   Time in seconds to wait between consecutive API requests.  
   Increasing this value is recommended to avoid overloading the J-STAGE servers.
 
+### Return Value
 
-### sample code
+The `fetch` function returns a `FetchResult` object with the following attributes:
+
+#### `df` (Polars `DataFrame`)
+
+- Type: `polars.DataFrame`
+- Each row corresponds to a single article returned by the J-STAGE Search API.
+
+#### Columns and data types
+
+| Column name        | Type        | Description |
+|--------------------|-------------|-------------|
+| `author`           | `list[str]` | List of author names (Japanese names are preferred when available). |
+| `article_title`    | `str`       | Title of the article. |
+| `material_title`   | `str`       | Title of the journal or publication. |
+| `article_link`     | `str`       | URL of the article page on J-STAGE. |
+| `pubyear`          | `i32`       | Year of publication. |
+| `doi`              | `str`       | DOI of the article (if available). |
+| `url_doi`          | `str`       | DOI prefixed with `https://` for direct access. |
+| `volume`           | `str`       | Volume number. |
+| `cdvols`           | `null`      | Volume identifier used by J-STAGE (may be null). |
+| `number`           | `str`       | Issue number. |
+| `starting_page`    | `i32`       | Starting page of the article. |
+| `ending_page`      | `i32`       | Ending page of the article. |
+
+> **Note**  
+> - Some columns may contain `null` values depending on the metadata availability.  
+> - The `author` column is a list type; when exporting to CSV, it is serialized as a string.  
+>   For preserving the list structure, JSON or Parquet formats are recommended.
+
+---
+
+#### `total_results` (`int | None`)
+
+- Total number of records matching the search query as reported by the J-STAGE API (`openSearch:totalResults`).
+- May be `None` if the value is not available in the response.
+
+
+## sample code
 ```python
 from j_staget import fetch
 
