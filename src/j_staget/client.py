@@ -25,9 +25,11 @@ SEARCH_PARAM_KEYS = {
     "keyword",
     "abst",
     "text",
-    "issn",
+    "p_issn",
+    "o_issn",
     "cdjournal",
 }
+
 
 
 class JStageAPIError(RuntimeError):
@@ -58,7 +60,8 @@ def fetch(
     material: str | None = None,
     author: str | None = None,
     affil: str | None = None,
-    issn: str | None = None,
+    p_issn: str | None = None,   # Print ISSN
+    o_issn: str | None = None,   # Online ISSN
     cdjournal: str | None = None,
 ) -> FetchResult:
     """
@@ -114,8 +117,12 @@ def fetch(
         base_params["author"] = author
     if affil:
         base_params["affil"] = affil
-    if issn:
-        base_params["issn"] = issn
+    if p_issn:
+        base_params["p_issn"] = p_issn
+
+    if o_issn:
+        base_params["o_issn"] = o_issn
+
     if cdjournal:
         base_params["cdjournal"] = cdjournal
 
@@ -177,6 +184,9 @@ def fetch(
                         "author": authors_local(entry),
                         "article_title": pick_ja_or_first_tag_local(entry, "article_title"),
                         "material_title": pick_ja_or_first_tag_local(entry, "material_title"),
+                        "cdjournal": get_first(entry, "prism:cdjournal"),
+                        "p_issn": get_first(entry, "prism:issn"),
+                        "o_issn": get_first(entry, "prism:eIssn"),
                         "article_link": pick_ja_or_first_tag_local(entry, "article_link"),
                         "pubyear": get_first(entry, "atom:pubyear"),
                         "doi": get_first(entry, "prism:doi"),
@@ -187,6 +197,7 @@ def fetch(
                         "number": get_first(entry, "prism:number"),
                         "starting_page": get_first(entry, "prism:startingPage"),
                         "ending_page": get_first(entry, "prism:endingPage"),
+
                     }
                 )
                 if len(all_data) >= max_records:

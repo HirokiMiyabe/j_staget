@@ -1,2 +1,2 @@
 [console_scripts]
-j-staget = j_staget.cli:main
+j_staget = j_staget.cli:main
