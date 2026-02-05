@@ -54,14 +54,11 @@ The `fetch` function accepts the following arguments:
   Filters by **author affiliation** (部分一致).  
   Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:3]{index=3}
 
-- `p_issn` (`str`, optional, default: `None`)  
-  Filters by **Print ISSN (p-ISSN)**.  
-  This parameter requires an **exact match** (e.g., `1234-5678`).
-
-- `o_issn` (`str`, optional, default: `None`)  
-  Filters by **Online ISSN (e-ISSN)**.  
-  This parameter requires an **exact match** (e.g., `8765-4321`).
-
+- `issn` (`str`, optional, default: `None`)  
+  Filters by **Print ISSN (p-ISSN)** or **Online ISSN (e-ISSN)**.  
+  This parameter requires an **exact match** (e.g., `1234-5678`).  
+  You can check the ISSN assigned to a journal on the journal’s top page on J-STAGE  
+  (see `examples/sample.ipynb`).
 
 - `cdjournal` (`str`, optional, default: `None`)  
   Filters by **journal code** (`cdjournal`). Useful when you want a stable identifier instead of a name string. :contentReference[oaicite:5]{index=5}
@@ -91,9 +88,9 @@ The `fetch` function returns a `FetchResult` object with the following attribute
 | `author`           | `list[str]` | List of author names (Japanese names are preferred when available). |
 | `article_title`    | `str`       | Title of the article. |
 | `material_title`   | `str`       | Title of the journal or publication. |
-| `cdjournal` | `str` | Journal code provided by J-STAGE. |
-| `p_issn` | `str` | Print ISSN of the journal (`prism:issn`). |
-| `o_issn` | `str` | Online ISSN of the journal (`prism:eIssn`). |
+| `cdjournal`        | `str`       | Journal code provided by J-STAGE. |
+| `p_issn`           | `str`       | Print ISSN of the journal (`prism:issn`). |
+| `o_issn`           | `str`       | Online ISSN of the journal (`prism:eIssn`). |
 | `article_link`     | `str`       | URL of the article page on J-STAGE. |
 | `pubyear`          | `i32`       | Year of publication. |
 | `doi`              | `str`       | DOI of the article (if available). |
