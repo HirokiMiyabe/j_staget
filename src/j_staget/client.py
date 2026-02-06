@@ -18,10 +18,16 @@ ALLOWED_FIELDS = {"article", "abst", "text", "keyword"}
 
 # service=3 で「検索語として成立する」代表的パラメータ（ERR_012回避用）
 SEARCH_PARAM_KEYS = {
-    "material","article","author","affil","keyword","abst","text",
-    "issn","cdjournal",  # ここが公式
+    "material",
+    "article",
+    "author",
+    "affil",
+    "keyword",
+    "abst",
+    "text",
+    "issn",
+    "cdjournal",  # ここが公式
 }
-
 
 
 class JStageAPIError(RuntimeError):
@@ -37,6 +43,7 @@ class FetchResult:
 def _q(s: str) -> str:
     return urllib.parse.quote(s, safe="")
 
+
 def _get_result_status(root: etree._Element) -> str | None:
     """
     <result><status> を取得。
@@ -48,6 +55,27 @@ def _get_result_status(root: etree._Element) -> str | None:
         return s if s else None
     return None
 
+
+def _get_total_results_first(root: etree._Element) -> int | None:
+    """
+    <opensearch:totalResults> を取得。
+    ページによって None/空になることがあるので、値があるときだけ int で返す。
+    """
+    # 正攻法（namespaces）
+    tr = root.xpath("//opensearch:totalResults/text()", namespaces=NS)
+    if tr:
+        t = tr[0].strip()
+        if t:
+            return int(t)
+
+    # フォールバック（prefix/NS差異対策）
+    tr2 = root.xpath("//*[local-name()='totalResults']/text()")
+    if tr2:
+        t2 = tr2[0].strip()
+        if t2:
+            return int(t2)
+
+    return None
 
 
 def fetch(
@@ -64,37 +92,11 @@ def fetch(
     material: str | None = None,
     author: str | None = None,
     affil: str | None = None,
-    issn: str | None = None,   # ISSN
+    issn: str | None = None,  # ISSN
     cdjournal: str | None = None,
 ) -> FetchResult:
     """
     Fetch records from J-STAGE Search API (service=3).
-
-    Parameters
-    ----------
-    target_word : str | None
-        Search keyword (placed into the query parameter specified by `field`).
-        If None/empty, you must provide at least one of: material/author/affil/issn/cdjournal.
-    year : int
-        pubyearfrom
-    field : {"article","abst","text","keyword"}
-        Which parameter receives `target_word`.
-    max_records : int
-        Hard cap to avoid runaway downloads.
-    sleep : float
-        Seconds to sleep between requests.
-    step : int
-        Records per request.
-    timeout : float
-        Request timeout in seconds.
-    session : requests.Session | None
-        Provide a session for connection pooling.
-    material/author/affil/issn/cdjournal : str | None
-        Additional search filters.
-
-    Returns
-    -------
-    FetchResult(df, total_results)
     """
     if field not in ALLOWED_FIELDS:
         raise ValueError(f"field must be one of {sorted(ALLOWED_FIELDS)}")
@@ -161,22 +163,22 @@ def fetch(
             except Exception as e:
                 raise JStageAPIError("Failed to parse XML response") from e
 
-            # ★ 追加：ERR_001 のときは即停止（検索条件が成立していない）
+            # ERR_001 のときは「条件不成立」なので即停止して 0 件として返す
             status = _get_result_status(root)
             if status == "ERR_001":
-                # 「結果が存在しない」ケースとして返す
-                return FetchResult(
-                    df=pl.DataFrame([]),
-                    total_results=0,
-                )
+                return FetchResult(df=pl.DataFrame([]), total_results=0)
+
+            # totalResults は「最初に取れた値」を固定（最後のページで None になっても上書きしない）
+            if total_results is None:
+                total_results = _get_total_results_first(root)
 
             entries = root.xpath("//atom:entry", namespaces=NS)
 
-            # ガード①：初回ページで 0 件
+            # 初回ページで 0 件
             if start_idx == 1 and not entries:
                 break
 
-            # ガード②：entry が空
+            # entry が空
             if not entries:
                 break
 
@@ -201,13 +203,12 @@ def fetch(
                         "number": get_first(entry, "prism:number"),
                         "starting_page": get_first(entry, "prism:startingPage"),
                         "ending_page": get_first(entry, "prism:endingPage"),
-
                     }
                 )
                 if len(all_data) >= max_records:
                     break
 
-            # ガード③：データが増えなかった（異常系）
+            # データが増えなかった（異常系）
             if len(all_data) == prev_len:
                 break
 
@@ -215,7 +216,7 @@ def fetch(
                 break
 
             start_idx += step
-            if total_results and start_idx > total_results:
+            if total_results is not None and start_idx > total_results:
                 break
 
             time.sleep(float(sleep))
@@ -238,6 +239,10 @@ def fetch(
                     .alias("url_doi"),
                 ]
             )
+
+        # 保険：total_results が最後まで取れなかった場合は「取得件数」を入れる（Noneのままより扱いやすい）
+        if total_results is None:
+            total_results = len(all_data)
 
         return FetchResult(df=df, total_results=total_results)
 
