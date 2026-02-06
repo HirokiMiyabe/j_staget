@@ -37,6 +37,18 @@ class FetchResult:
 def _q(s: str) -> str:
     return urllib.parse.quote(s, safe="")
 
+def _get_result_status(root: etree._Element) -> str | None:
+    """
+    <result><status> を取得。
+    正常系では result 要素が無いことがあるので、その場合は None を返す。
+    """
+    status = root.xpath("//*[local-name()='result']/*[local-name()='status']/text()")
+    if status:
+        s = status[0].strip()
+        return s if s else None
+    return None
+
+
 
 def fetch(
     target_word: str | None = None,
@@ -149,9 +161,14 @@ def fetch(
             except Exception as e:
                 raise JStageAPIError("Failed to parse XML response") from e
 
-            if total_results is None:
-                tr = root.xpath("//opensearch:totalResults", namespaces=NS)
-                total_results = int(tr[0].text) if tr and tr[0].text else None
+            # ★ 追加：ERR_001 のときは即停止（検索条件が成立していない）
+            status = _get_result_status(root)
+            if status == "ERR_001":
+                # 「結果が存在しない」ケースとして返す
+                return FetchResult(
+                    df=pl.DataFrame([]),
+                    total_results=0,
+                )
 
             entries = root.xpath("//atom:entry", namespaces=NS)
 
