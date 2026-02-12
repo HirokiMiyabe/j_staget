@@ -1,0 +1,170 @@
+# j-staget
+
+Python client for J-STAGE Search API (service=3).
+
+
+> ⚠️ **Important Notice (J-STAGE Terms of Use)**  
+>  
+> This package is an **unofficial client** for the J-STAGE Search API (service=3).  
+> Before using this package, **you must read and agree to** the following documents:
+>  
+> - J-STAGE Terms And Policies:  
+>   https://www.jstage.jst.go.jp/static/pages/TermsAndPolicies/ForIndividuals/-char/ja"
+> - J-STAGE WebAPI Terms And Policies:  
+>   https://www.jstage.jst.go.jp/static/pages/WebAPI/-char/ja
+> - About J-STAGE Web API:  
+>   https://www.jstage.jst.go.jp/static/pages/JstageServices/TAB3/-char/ja
+>  
+> By using this package, **you acknowledge that you are solely responsible for complying with these terms**.  
+> The author of this package assumes **no responsibility or liability** for any damages, losses, or violations arising from its use.
+
+
+
+## Install
+```bash
+pip install j_staget
+```
+## usage 
+### Arguments
+
+The `fetch` function accepts the following arguments:
+
+- `target_word` (`str`, required)  
+  The keyword to search for.
+
+- `year` (`int`, optional, default: `1950`)  
+  The starting publication year for the search (`pubyearfrom` in the J-STAGE API).  
+  Set `0` to search all available years.
+
+- `field` (`str`, optional, default: `"article"`)  
+  Specifies which part of the paper is searched:
+  - `"article"`: search the target word in **article titles**
+  - `"abst"`: search the target word in **abstracts**
+  - `"text"`: search the target word in the **full text of papers**
+
+- `material` (`str`, optional, default: `None`)  
+  Filters by **journal / publication title** (部分一致).  
+  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:1]{index=1}
+
+- `author` (`str`, optional, default: `None`)  
+  Filters by **author name** (部分一致).  
+  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:2]{index=2}
+
+- `affil` (`str`, optional, default: `None`)  
+  Filters by **author affiliation** (部分一致).  
+  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:3]{index=3}
+
+- `issn` (`str`, optional, default: `None`)  
+  Filters by **Print ISSN (p-ISSN)** or **Online ISSN (e-ISSN)**.  
+  Both p-ISSN and e-ISSN are accepted, but only one ISSN value can be specified.  
+  This parameter requires an **exact match** (e.g., `1234-5678`).  
+  You can check the ISSN assigned to a journal on the journal’s top page on J-STAGE  
+  (see `examples/sample.ipynb`).
+  
+
+- `cdjournal` (`str`, optional, default: `None`)  
+  Filters by **journal code** (`cdjournal`). Useful when you want a stable identifier instead of a name string. :contentReference[oaicite:5]{index=5}
+
+
+- `max_records` (`int`, optional, default: `20000`)  
+  Maximum number of records to retrieve.  
+  This is a safety limit to prevent excessive API requests.
+
+- `sleep` (`float`, optional, default: `5.0`)  
+  Time in seconds to wait between consecutive API requests.  
+  Increasing this value is recommended to avoid overloading the J-STAGE servers.
+
+### Return Value
+
+The `fetch` function returns a `FetchResult` object with the following attributes:
+
+#### `df` (Polars `DataFrame`)
+
+- Type: `polars.DataFrame`
+- Each row corresponds to a single article returned by the J-STAGE Search API.
+
+#### Columns and data types
+
+| Column name        | Type        | Description |
+|--------------------|-------------|-------------|
+| `author`           | `list[str]` | List of author names (Japanese names are preferred when available). |
+| `article_title`    | `str`       | Title of the article. |
+| `material_title`   | `str`       | Title of the journal or publication. |
+| `cdjournal`        | `str`       | Journal code provided by J-STAGE. |
+| `p_issn`           | `str`       | Print ISSN of the journal (`prism:issn`). |
+| `o_issn`           | `str`       | Online ISSN of the journal (`prism:eIssn`). |
+| `article_link`     | `str`       | URL of the article page on J-STAGE. |
+| `pubyear`          | `i32`       | Year of publication. |
+| `doi`              | `str`       | DOI of the article (if available). |
+| `url_doi`          | `str`       | DOI prefixed with `https://` for direct access. |
+| `volume`           | `str`       | Volume number. |
+| `cdvols`           | `null`      | Volume identifier used by J-STAGE (may be null). |
+| `number`           | `str`       | Issue number. |
+| `starting_page`    | `i32`       | Starting page of the article. |
+| `ending_page`      | `i32`       | Ending page of the article. |
+
+> **Note**  
+> - Some columns may contain `null` values depending on the metadata availability.  
+> - The `author` column is a list type; when exporting to CSV, it is serialized as a string.  
+>   For preserving the list structure, JSON or Parquet formats are recommended.
+
+---
+
+#### `total_results` (`int | None`)
+
+- Total number of records matching the search query as reported by the J-STAGE API (`openSearch:totalResults`).
+- May be `None` if the value is not available in the response.
+
+
+## sample code
+```python
+from j_staget import fetch
+
+res = fetch(
+    target_word="因果",
+    year=1950,
+    field="article",
+    max_records=5000,
+    sleep=2.0,
+)
+
+df = res.df
+print(df.shape, res.total_results)
+print(df.head())
+```
+
+## cli
+```bash
+j-staget "因果" --year 1950 --field article --max-records 5000 --out data/out.parquet
+```
+
+## Notes
+```yaml
+
+---
+
+## GitHub Actions
+`.github/workflows/ci.yml`
+```yaml
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -U pip
+      - run: pip install -e . pytest
+      - run: pytest -q
+
+```
+
+
+
+## Credits
+
+- Data source: [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
+- Powered by [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
