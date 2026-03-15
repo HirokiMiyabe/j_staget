@@ -29,48 +29,47 @@ pip install j_staget
 
 `fetch` 関数では主に次の引数を指定できます。
 
-- `target_word` (`str`, optional)
+- `target_word` (`str`, 省略可)
   検索キーワードです。
   省略可能ですが、その場合は `material`、`author`、`affil`、`issn`、`cdjournal` のいずれかを少なくとも 1 つ指定してください。
 
-- `year` (`int`, optional, default: `1950`)
+- `year` (`int`, 省略可, 既定値: `1950`)
   検索開始年です（J-STAGE API の `pubyearfrom`）。
   `0` を指定すると、利用可能なすべての年が検索対象になります。
 
-- `field` (`str`, optional, default: `"article"`)
+- `field` (`str`, 省略可, 既定値: `"article"`)
   `target_word` をどこで検索するかを指定します。
   - `"article"`: 論文タイトル
   - `"abst"`: 抄録
   - `"text"`: 論文本文
-  - `"keyword"`: キーワード
 
-- `material` (`str`, optional, default: `None`)
+- `material` (`str`, 省略可, 既定値: `None`)
   雑誌名または刊行物名で絞り込みます。
   複数語をスペース区切りで指定すると AND 検索になります。
 
-- `author` (`str`, optional, default: `None`)
+- `author` (`str`, 省略可, 既定値: `None`)
   著者名で絞り込みます。
   複数語をスペース区切りで指定すると AND 検索になります。
 
-- `affil` (`str`, optional, default: `None`)
+- `affil` (`str`, 省略可, 既定値: `None`)
   著者所属で絞り込みます。
   複数語をスペース区切りで指定すると AND 検索になります。
 
-- `issn` (`str`, optional, default: `None`)
-  `Print ISSN (p-ISSN)` または `Online ISSN (e-ISSN)` で絞り込みます。
+- `issn` (`str`, 省略可, 既定値: `None`)
+  `印刷版 ISSN (p-ISSN)` または `オンライン ISSN (e-ISSN)` で絞り込みます。
   `p-ISSN` と `e-ISSN` のどちらでも指定できますが、指定できる ISSN は 1 つだけです。
   この引数は完全一致です（例: `1234-5678`）。
   各ジャーナルに割り当てられた ISSN は、J-STAGE 上のジャーナルトップページで確認できます。
 
-- `cdjournal` (`str`, optional, default: `None`)
+- `cdjournal` (`str`, 省略可, 既定値: `None`)
   ジャーナルコード (`cdjournal`) で絞り込みます。
   名称文字列ではなく、より安定した識別子を使いたい場合に便利です。
 
-- `max_records` (`int`, optional, default: `20000`)
+- `max_records` (`int`, 省略可, 既定値: `20000`)
   取得するレコード数の上限です。
   過剰な API リクエストを防ぐための安全弁として機能します。
 
-- `sleep` (`float`, optional, default: `5.0`)
+- `sleep` (`float`, 省略可, 既定値: `5.0`)
   連続する API リクエストの間に待機する秒数です。
   J-STAGE サーバーへの負荷を避けるため、必要に応じて大きめに設定することをおすすめします。
 
@@ -85,14 +84,14 @@ pip install j_staget
 
 #### カラムとデータ型
 
-| Column name      | Type        | Description |
+| 列名             | 型          | 説明        |
 |------------------|-------------|-------------|
 | `author`         | `list[str]` | 著者名のリストです。日本語名が利用できる場合は日本語名が優先されます。 |
 | `article_title`  | `str`       | 論文タイトルです。 |
 | `material_title` | `str`       | 掲載誌名または刊行物名です。 |
 | `cdjournal`      | `str`       | J-STAGE が提供するジャーナルコードです。 |
-| `p_issn`         | `str`       | 掲載誌の `Print ISSN` (`prism:issn`) です。 |
-| `o_issn`         | `str`       | 掲載誌の `Online ISSN` (`prism:eIssn`) です。 |
+| `p_issn`         | `str`       | 掲載誌の `印刷版 ISSN` (`prism:issn`) です。 |
+| `o_issn`         | `str`       | 掲載誌の `オンライン ISSN` (`prism:eIssn`) です。 |
 | `article_link`   | `str`       | J-STAGE 上の論文ページの URL です。 |
 | `pubyear`        | `i32`       | 発行年です。 |
 | `doi`            | `str`       | 論文の DOI です（利用可能な場合）。 |
@@ -131,11 +130,7 @@ print(df.shape, res.total_results)
 print(df.head())
 ```
 
-## コマンドライン
 
-```bash
-j-staget "機械学習" --year 1950 --field article --max-records 5000 --out data/out.parquet
-```
 
 ## GitHub Actions
 
@@ -159,5 +154,5 @@ jobs:
 
 ## クレジット
 
-- データソース: [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
-- Powered by [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
+- 表示情報提供元: [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
+- Powered by: [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
