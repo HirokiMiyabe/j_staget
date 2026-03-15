@@ -1,127 +1,125 @@
 # j-staget
 
-Python client for J-STAGE Search API (service=3).
+J-STAGE Search API (`service=3`) の非公式 Python クライアントです。
 
-
-> ⚠️ **Important Notice (J-STAGE Terms of Use)**  
->  
-> This package is an **unofficial client** for the J-STAGE Search API (service=3).  
-> Before using this package, **you must read and agree to** the following documents:
->  
-> - J-STAGE Terms And Policies:  
->   https://www.jstage.jst.go.jp/static/pages/TermsAndPolicies/ForIndividuals/-char/ja"
-> - J-STAGE WebAPI Terms And Policies:  
+> **重要なお知らせ（J-STAGE 利用規約）**
+>
+> このパッケージは、J-STAGE Search API (`service=3`) の **非公式クライアント** です。
+> 利用前に、必ず次のドキュメントを読み、内容に同意してください。
+>
+> - J-STAGE Terms And Policies:
+>   https://www.jstage.jst.go.jp/static/pages/TermsAndPolicies/ForIndividuals/-char/ja
+> - J-STAGE WebAPI Terms And Policies:
 >   https://www.jstage.jst.go.jp/static/pages/WebAPI/-char/ja
-> - About J-STAGE Web API:  
+> - About J-STAGE Web API:
 >   https://www.jstage.jst.go.jp/static/pages/JstageServices/TAB3/-char/ja
->  
-> By using this package, **you acknowledge that you are solely responsible for complying with these terms**.  
-> The author of this package assumes **no responsibility or liability** for any damages, losses, or violations arising from its use.
+>
+> このパッケージを利用する場合、上記規約を自身の責任で遵守するものとします。
+> 本パッケージの作者は、その利用によって生じたいかなる損害、損失、違反についても責任を負いません。
 
+## インストール
 
-
-## Install
 ```bash
 pip install j_staget
 ```
-## usage 
-### Arguments
 
-The `fetch` function accepts the following arguments:
+## 使い方
 
-- `target_word` (`str`, required)  
-  The keyword to search for.
+### 主な引数
 
-- `year` (`int`, optional, default: `1950`)  
-  The starting publication year for the search (`pubyearfrom` in the J-STAGE API).  
-  Set `0` to search all available years.
+`fetch` 関数では主に次の引数を指定できます。
 
-- `field` (`str`, optional, default: `"article"`)  
-  Specifies which part of the paper is searched:
-  - `"article"`: search the target word in **article titles**
-  - `"abst"`: search the target word in **abstracts**
-  - `"text"`: search the target word in the **full text of papers**
+- `target_word` (`str`, optional)
+  検索キーワードです。
+  省略可能ですが、その場合は `material`、`author`、`affil`、`issn`、`cdjournal` のいずれかを少なくとも 1 つ指定してください。
 
-- `material` (`str`, optional, default: `None`)  
-  Filters by **journal / publication title** (部分一致).  
-  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:1]{index=1}
+- `year` (`int`, optional, default: `1950`)
+  検索開始年です（J-STAGE API の `pubyearfrom`）。
+  `0` を指定すると、利用可能なすべての年が検索対象になります。
 
-- `author` (`str`, optional, default: `None`)  
-  Filters by **author name** (部分一致).  
-  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:2]{index=2}
+- `field` (`str`, optional, default: `"article"`)
+  `target_word` をどこで検索するかを指定します。
+  - `"article"`: 論文タイトル
+  - `"abst"`: 抄録
+  - `"text"`: 論文本文
+  - `"keyword"`: キーワード
 
-- `affil` (`str`, optional, default: `None`)  
-  Filters by **author affiliation** (部分一致).  
-  Multiple terms can be combined with **spaces** (AND). :contentReference[oaicite:3]{index=3}
+- `material` (`str`, optional, default: `None`)
+  雑誌名または刊行物名で絞り込みます。
+  複数語をスペース区切りで指定すると AND 検索になります。
 
-- `issn` (`str`, optional, default: `None`)  
-  Filters by **Print ISSN (p-ISSN)** or **Online ISSN (e-ISSN)**.  
-  Both p-ISSN and e-ISSN are accepted, but only one ISSN value can be specified.  
-  This parameter requires an **exact match** (e.g., `1234-5678`).  
-  You can check the ISSN assigned to a journal on the journal’s top page on J-STAGE  
-  (see `examples/sample.ipynb`).
-  
+- `author` (`str`, optional, default: `None`)
+  著者名で絞り込みます。
+  複数語をスペース区切りで指定すると AND 検索になります。
 
-- `cdjournal` (`str`, optional, default: `None`)  
-  Filters by **journal code** (`cdjournal`). Useful when you want a stable identifier instead of a name string. :contentReference[oaicite:5]{index=5}
+- `affil` (`str`, optional, default: `None`)
+  著者所属で絞り込みます。
+  複数語をスペース区切りで指定すると AND 検索になります。
 
+- `issn` (`str`, optional, default: `None`)
+  `Print ISSN (p-ISSN)` または `Online ISSN (e-ISSN)` で絞り込みます。
+  `p-ISSN` と `e-ISSN` のどちらでも指定できますが、指定できる ISSN は 1 つだけです。
+  この引数は完全一致です（例: `1234-5678`）。
+  各ジャーナルに割り当てられた ISSN は、J-STAGE 上のジャーナルトップページで確認できます。
 
-- `max_records` (`int`, optional, default: `20000`)  
-  Maximum number of records to retrieve.  
-  This is a safety limit to prevent excessive API requests.
+- `cdjournal` (`str`, optional, default: `None`)
+  ジャーナルコード (`cdjournal`) で絞り込みます。
+  名称文字列ではなく、より安定した識別子を使いたい場合に便利です。
 
-- `sleep` (`float`, optional, default: `5.0`)  
-  Time in seconds to wait between consecutive API requests.  
-  Increasing this value is recommended to avoid overloading the J-STAGE servers.
+- `max_records` (`int`, optional, default: `20000`)
+  取得するレコード数の上限です。
+  過剰な API リクエストを防ぐための安全弁として機能します。
 
-### Return Value
+- `sleep` (`float`, optional, default: `5.0`)
+  連続する API リクエストの間に待機する秒数です。
+  J-STAGE サーバーへの負荷を避けるため、必要に応じて大きめに設定することをおすすめします。
 
-The `fetch` function returns a `FetchResult` object with the following attributes:
+### 戻り値
+
+`fetch` 関数は、次の属性を持つ `FetchResult` オブジェクトを返します。
 
 #### `df` (Polars `DataFrame`)
 
-- Type: `polars.DataFrame`
-- Each row corresponds to a single article returned by the J-STAGE Search API.
+- 型: `polars.DataFrame`
+- 各行は、J-STAGE Search API が返した 1 件の論文データに対応します。
 
-#### Columns and data types
+#### カラムとデータ型
 
-| Column name        | Type        | Description |
-|--------------------|-------------|-------------|
-| `author`           | `list[str]` | List of author names (Japanese names are preferred when available). |
-| `article_title`    | `str`       | Title of the article. |
-| `material_title`   | `str`       | Title of the journal or publication. |
-| `cdjournal`        | `str`       | Journal code provided by J-STAGE. |
-| `p_issn`           | `str`       | Print ISSN of the journal (`prism:issn`). |
-| `o_issn`           | `str`       | Online ISSN of the journal (`prism:eIssn`). |
-| `article_link`     | `str`       | URL of the article page on J-STAGE. |
-| `pubyear`          | `i32`       | Year of publication. |
-| `doi`              | `str`       | DOI of the article (if available). |
-| `url_doi`          | `str`       | DOI prefixed with `https://` for direct access. |
-| `volume`           | `str`       | Volume number. |
-| `cdvols`           | `null`      | Volume identifier used by J-STAGE (may be null). |
-| `number`           | `str`       | Issue number. |
-| `starting_page`    | `i32`       | Starting page of the article. |
-| `ending_page`      | `i32`       | Ending page of the article. |
+| Column name      | Type        | Description |
+|------------------|-------------|-------------|
+| `author`         | `list[str]` | 著者名のリストです。日本語名が利用できる場合は日本語名が優先されます。 |
+| `article_title`  | `str`       | 論文タイトルです。 |
+| `material_title` | `str`       | 掲載誌名または刊行物名です。 |
+| `cdjournal`      | `str`       | J-STAGE が提供するジャーナルコードです。 |
+| `p_issn`         | `str`       | 掲載誌の `Print ISSN` (`prism:issn`) です。 |
+| `o_issn`         | `str`       | 掲載誌の `Online ISSN` (`prism:eIssn`) です。 |
+| `article_link`   | `str`       | J-STAGE 上の論文ページの URL です。 |
+| `pubyear`        | `i32`       | 発行年です。 |
+| `doi`            | `str`       | 論文の DOI です（利用可能な場合）。 |
+| `url_doi`        | `str`       | `https://doi.org/` を付与した DOI の URL です。 |
+| `volume`         | `str`       | 巻です。 |
+| `cdvols`         | `null`      | J-STAGE 内部で使われる巻識別子です（`null` の場合があります）。 |
+| `number`         | `str`       | 号です。 |
+| `starting_page`  | `i32`       | 開始ページです。 |
+| `ending_page`    | `i32`       | 終了ページです。 |
 
-> **Note**  
-> - Some columns may contain `null` values depending on the metadata availability.  
-> - The `author` column is a list type; when exporting to CSV, it is serialized as a string.  
->   For preserving the list structure, JSON or Parquet formats are recommended.
-
----
+> **補足**
+> - メタデータの有無によっては、一部のカラムに `null` が入ることがあります。
+> - `author` カラムはリスト型です。CSV に出力すると文字列として保存されます。
+>   リスト構造を保ちたい場合は、JSON または Parquet 形式がおすすめです。
 
 #### `total_results` (`int | None`)
 
-- Total number of records matching the search query as reported by the J-STAGE API (`openSearch:totalResults`).
-- May be `None` if the value is not available in the response.
+- J-STAGE API が返す検索結果の総件数です（`openSearch:totalResults`）。
+- API 応答から総件数を取得できない場合は、取得できた件数が入ることがあります。
 
+## サンプルコード
 
-## sample code
 ```python
 from j_staget import fetch
 
 res = fetch(
-    target_word="因果",
+    target_word="機械学習",
     year=1950,
     field="article",
     max_records=5000,
@@ -133,18 +131,16 @@ print(df.shape, res.total_results)
 print(df.head())
 ```
 
-## cli
+## コマンドライン
+
 ```bash
-j-staget "因果" --year 1950 --field article --max-records 5000 --out data/out.parquet
+j-staget "機械学習" --year 1950 --field article --max-records 5000 --out data/out.parquet
 ```
 
-## Notes
-```yaml
-
----
-
 ## GitHub Actions
+
 `.github/workflows/ci.yml`
+
 ```yaml
 name: ci
 on: [push, pull_request]
@@ -159,12 +155,9 @@ jobs:
       - run: pip install -U pip
       - run: pip install -e . pytest
       - run: pytest -q
-
 ```
 
+## クレジット
 
-
-## Credits
-
-- Data source: [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
+- データソース: [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
 - Powered by [J-STAGE](https://www.jstage.jst.go.jp/browse/-char/ja)
