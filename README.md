@@ -114,7 +114,7 @@ pip install j_staget
 
 ## サンプルコード
 
-[Google Colab上のサンプルコード](https://drive.google.com/file/d/1sFR2WXMFezKYSL2WQRIqIZvK47BobxVM/view?usp=sharing)
+[Google Colab上のサンプルコード](https://colab.research.google.com/drive/170Y_VGmRv5H2ip2LeK-TuAj1dnsqm3zw?usp=sharing)
 
 ```python
 from j_staget import fetch
